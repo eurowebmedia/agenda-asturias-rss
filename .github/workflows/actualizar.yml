@@ -16,7 +16,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install requests beautifulsoup4
+      - run: pip install requests beautifulsoup4 certifi
+      - name: Completar la cadena SSL de turismoasturias.es
+        # La web no envía su certificado intermedio; lo descargamos de su URL AIA
+        run: |
+          echo | openssl s_client -connect www.turismoasturias.es:443 -servername www.turismoasturias.es 2>/dev/null | openssl x509 > leaf.pem
+          AIA=$(openssl x509 -in leaf.pem -noout -text | grep "CA Issuers" | grep -o 'http[^ ,]*' | head -1)
+          echo "Intermedio: $AIA"
+          curl -sSL "$AIA" -o inter.cer
+          (openssl x509 -inform DER -in inter.cer 2>/dev/null || openssl x509 -in inter.cer) > inter.pem
+          cat "$(python -c 'import certifi; print(certifi.where())')" inter.pem > ca.pem
+          echo "REQUESTS_CA_BUNDLE=$PWD/ca.pem" >> "$GITHUB_ENV"
       - run: python generar_rss.py
       - name: Guardar cambios
         run: |
