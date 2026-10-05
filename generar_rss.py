@@ -9,6 +9,7 @@ import sys
 import time
 from datetime import datetime, timezone
 from email.utils import format_datetime
+from urllib.parse import quote, urlparse
 from xml.sax.saxutils import escape
 
 import requests
@@ -20,6 +21,7 @@ SECCIONES = [
     "/ocio-infantil", "/rutas-y-visitas-guiadas", "/ferias-mercados",
 ]
 PORTLET = "as_asac_calendar_suite_CalendarSuitePortlet_INSTANCE_JXvXAPSD7JC0"
+PAGINA_AGENDA = "117"  # p_l_id de la página de la agenda en la web
 MAX_PAGINAS = 15
 SALIDA = "agenda-asturias.xml"
 MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
@@ -127,6 +129,17 @@ def fechas_anteriores():
     return dict(re.findall(r'<guid isPermaLink="false">([^<]+)</guid><pubDate>([^<]+)</pubDate>', texto))
 
 
+def enlace_es(url):
+    """Enlace que abre el evento siempre en español.
+
+    La web recuerda el idioma del visitante en una cookie (el visor de News
+    Explorer puede quedarse en alemán); update_language la fija a es_ES.
+    """
+    ruta = urlparse(url).path
+    return (f"{BASE}/c/portal/update_language?p_l_id={PAGINA_AGENDA}"
+            f"&redirect={quote(ruta, safe='')}&languageId=es_ES")
+
+
 def rss(eventos):
     ahora = datetime.now(timezone.utc)
     vistos = fechas_anteriores()
@@ -149,7 +162,7 @@ def rss(eventos):
         items.append(
             "<item>"
             f"<title>{escape(titulo)}</title>"
-            f"<link>{escape(e['url'])}</link>"
+            f"<link>{escape(enlace_es(e['url']))}</link>"
             f'<guid isPermaLink="false">{guid}</guid>'
             f"<pubDate>{pub}</pubDate>"
             f"{cats}"
