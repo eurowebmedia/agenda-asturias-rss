@@ -136,6 +136,11 @@ def enlace_es(url):
     Explorer puede quedarse en alemán); update_language la fija a es_ES.
     """
     ruta = urlparse(url).path
+    # Los eventos de una categoría (/museos/, /fiestas/...) se reescriben a la
+    # ruta de la agenda principal, que es la que acepta el cambio de idioma.
+    m = re.search(r"/-/calendarsuite/event/(.+)/[^/]+$", ruta)
+    if m:
+        ruta = f"/agenda-de-asturias/-/calendarsuite/event/{m.group(1)}/{PORTLET.rsplit('_', 1)[1]}"
     return (f"{BASE}/c/portal/update_language?p_l_id={PAGINA_AGENDA}"
             f"&redirect={quote(ruta, safe='')}&languageId=es_ES")
 
