@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Añadir a la agenda</title>
+<style>
+  body{margin:0;font-family:-apple-system,Roboto,Arial,sans-serif;background:#faf6ea;color:#20384B;display:flex;min-height:100vh;align-items:center;justify-content:center}
+  .caja{max-width:420px;margin:24px 16px;background:#fff;border-top:5px solid #886800;border-radius:8px;padding:24px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+  h1{font-size:20px;margin:0 0 6px} p{margin:0 0 18px;font-size:15px;color:#444}
+  a.boton{display:inline-block;background:#886800;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:6px}
+  .nota{font-size:13px;color:#777;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="caja">
+  <h1 id="titulo">Añadir a la agenda</h1>
+  <p id="cuando"></p>
+  <a class="boton" id="descargar" href="#">📅 Añadir al calendario</a>
+  <p class="nota">Si no se abre solo, pulsa el botón. Funciona con Calendario de Apple (iPhone, iPad, Mac), Outlook y cualquier agenda que acepte archivos .ics.</p>
+</div>
+<script>
+(function(){
+  var p = new URLSearchParams(location.search);
+  var t = p.get('t') || 'Evento', s = p.get('s') || '', e = p.get('e') || s,
+      allday = p.get('a') === '1', l = p.get('l') || '', d = p.get('d') || '', r = p.get('r') || '';
+  if (!/^\d{8}(T\d{6})?$/.test(s)) { document.getElementById('cuando').textContent = 'Faltan los datos del evento.'; return; }
+  if (!/^\d{8}(T\d{6})?$/.test(e)) e = s;
+  var esc = function(x){ return x.replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n'); };
+  var fold = function(line){ var out = [], b = line; while (b.length > 73) { out.push(b.slice(0,73)); b = ' ' + b.slice(73); } out.push(b); return out.join('\r\n'); };
+  var ahora = new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+  var uid = s + '-' + t.replace(/[^a-z0-9]/gi,'').slice(0,30).toLowerCase() + '@vivirasturias.com';
+  var L = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//EuroWeb Media//Agenda//ES','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+  if (!allday) {
+    L.push('BEGIN:VTIMEZONE','TZID:Europe/Madrid',
+      'BEGIN:DAYLIGHT','TZOFFSETFROM:+0100','TZOFFSETTO:+0200','TZNAME:CEST','DTSTART:19700329T020000','RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU','END:DAYLIGHT',
+      'BEGIN:STANDARD','TZOFFSETFROM:+0200','TZOFFSETTO:+0100','TZNAME:CET','DTSTART:19701025T030000','RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU','END:STANDARD',
+      'END:VTIMEZONE');
+  }
+  L.push('BEGIN:VEVENT','UID:' + uid,'DTSTAMP:' + ahora);
+  if (allday) { L.push('DTSTART;VALUE=DATE:' + s.slice(0,8), 'DTEND;VALUE=DATE:' + e.slice(0,8)); }
+  else { L.push('DTSTART;TZID=Europe/Madrid:' + s, 'DTEND;TZID=Europe/Madrid:' + e); }
+  if (r) L.push('RRULE:' + r.replace(/^RRULE:/,''));
+  L.push('SUMMARY:' + esc(t));
+  if (l) L.push('LOCATION:' + esc(l));
+  if (d) L.push('DESCRIPTION:' + esc(d));
+  var url = (d.match(/https?:\/\/\S+/) || [])[0]; if (url) L.push('URL:' + url);
+  L.push('END:VEVENT','END:VCALENDAR');
+  var ics = L.map(fold).join('\r\n') + '\r\n';
+
+  var fecha = function(x){ var y = x.slice(0,4), m = x.slice(4,6), dd = x.slice(6,8); var txt = (+dd) + '/' + (+m) + '/' + y; if (x.length > 8) txt += ' · ' + x.slice(9,11) + ':' + x.slice(11,13); return txt; };
+  document.getElementById('titulo').textContent = t;
+  document.getElementById('cuando').textContent = fecha(s) + (l ? ' · ' + l : '');
+  document.title = t + ' — Añadir a la agenda';
+
+  var nombre = (t.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase() || 'evento') + '.ics';
+  var blob = new Blob([ics], {type:'text/calendar;charset=utf-8'});
+  var enlace = document.getElementById('descargar');
+  enlace.href = URL.createObjectURL(blob);
+  enlace.setAttribute('download', nombre);
+  setTimeout(function(){ enlace.click(); }, 300);
+})();
+</script>
+</body>
+</html>
