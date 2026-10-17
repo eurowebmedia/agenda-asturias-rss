@@ -46,6 +46,11 @@
   if (l) L.push('LOCATION:' + esc(l));
   if (d) L.push('DESCRIPTION:' + esc(d));
   var url = (d.match(/https?:\/\/\S+/) || [])[0]; if (url) L.push('URL:' + url);
+  // Avisos: el día antes (a las 9:00 en eventos de día completo) y, si
+  // tiene hora, también 2 horas antes.
+  var aviso = function(trig, txt){ L.push('BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:' + esc(txt),'TRIGGER:' + trig,'END:VALARM'); };
+  if (allday) { aviso('-PT15H', 'Mañana: ' + t); }
+  else { aviso('-P1D', 'Mañana: ' + t); aviso('-PT2H', 'Dentro de 2 horas: ' + t); }
   L.push('END:VEVENT','END:VCALENDAR');
   var ics = L.map(fold).join('\r\n') + '\r\n';
 
