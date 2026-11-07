@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tiempos en directo</title>
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #fff; }
+  #recorte { position: relative; width: 100%; height: 100%; overflow: hidden; }
+  #fcta { border: none; display: block; width: 100%; }
+</style>
+</head>
+<body>
+<div id="recorte"><iframe id="fcta" src="https://www.fcta.es/competiciones/696260ad-0d94-467f-b1d7-cac315c17024/tiempos"></iframe></div>
+<script>
+  // Altura de la cabecera + migas de pan de fcta.es según el ancho (medido)
+  function recorte(ancho) {
+    if (ancho >= 1024) return 206;
+    if (ancho >= 768)  return 190;
+    if (ancho >= 640)  return 141;
+    return 125;
+  }
+  function ajustar() {
+    var cont = document.getElementById("recorte");
+    var f = document.getElementById("fcta");
+    var r = recorte(cont.clientWidth);
+    f.style.marginTop = -r + "px";
+    f.style.height = (cont.clientHeight + r) + "px";
+  }
+  ajustar();
+  window.addEventListener("resize", ajustar);
+</script>
+</body>
+</html>
